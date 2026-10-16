@@ -1,0 +1,25 @@
+# HADES Workspace Manifest
+# Defines target microcontroller board, SDK, and isolation parameters.
+
+version: '1.0'
+project:
+  name: smart-hydroponics-esp32
+  version: 0.1.0
+  description: ESP32 firmware project
+target:
+  board: esp32-devkit-v1
+  chip: ESP32
+  arch: xtensa-esp32
+  sdk: esp-idf
+  sdk_version: '5.1'
+hardware:
+  interface: uart
+  baud_rate: 115200
+  bridge_hint: cp2102
+  kernel_module_required: false
+  usb_vendor_id: null
+  usb_product_id: null
+isolation:
+  preferred_mode: container
+  ephemeral: true
+  base_image: null
