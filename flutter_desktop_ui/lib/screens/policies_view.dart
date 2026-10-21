@@ -1,12 +1,76 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
+import '../state/control_plane_controller.dart';
 
-class PoliciesView extends StatelessWidget {
+class PoliciesView extends StatefulWidget {
   const PoliciesView({super.key});
 
   @override
+  State<PoliciesView> createState() => _PoliciesViewState();
+}
+
+class _PoliciesViewState extends State<PoliciesView> {
+  String _selectedPreset = 'esp32';
+  String? _loadedYaml;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadManifest();
+    });
+  }
+
+  Future<void> _loadManifest() async {
+    final controller = context.read<ControlPlaneController>();
+    if (controller.repository != null) {
+      final manifest = await controller.repository!.getManifest();
+      if (mounted && manifest['raw_yaml'] != null) {
+        setState(() {
+          _loadedYaml = manifest['raw_yaml'] as String;
+        });
+      }
+    }
+  }
+
+  Future<void> _initManifest() async {
+    setState(() => _isLoading = true);
+    final controller = context.read<ControlPlaneController>();
+    await controller.initWorkspaceManifest(_selectedPreset);
+    await _loadManifest();
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    const defaultYaml =
+        'schema_version: "1.0"\n'
+        'policy:\n'
+        '  enforce: strict\n'
+        '  host_pollution_limit: 0%\n'
+        'rules:\n'
+        '  - match:\n'
+        '      class: "0x02" # CDC-ACM\n'
+        '    decision: "DOCKER_CONTAINER"\n'
+        '    broker: "cgroup allow, unprivileged"\n'
+        '\n'
+        '  - match:\n'
+        '      class: "0xFF" # Vendor specific\n'
+        '    decision: "QEMU_KVM_VM"\n'
+        '    broker: "libvirt hostdev hotplug"\n'
+        '\n'
+        '  - match:\n'
+        '      class: ["0x03", "0x08"]\n'
+        '    decision: "BLOCK"\n'
+        '    reason: "HID/storage not approved"';
+
+    final displayYaml = _loadedYaml ?? defaultYaml;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -42,7 +106,10 @@ class PoliciesView extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.chipMintBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+                border: Border.all(
+                  color: AppColors.border,
+                  width: AppTheme.borderWidth,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -77,7 +144,10 @@ class PoliciesView extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.background,
                     borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                    border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+                    border: Border.all(
+                      color: AppColors.border,
+                      width: AppTheme.borderWidth,
+                    ),
                     boxShadow: AppTheme.softShadow,
                   ),
                   padding: const EdgeInsets.all(20),
@@ -111,7 +181,8 @@ class PoliciesView extends StatelessWidget {
                             _PolicyRuleItem(
                               title: 'Serial / Communication (CDC-ACM 0x02)',
                               action: 'ALLOW → DOCKER CONTAINER',
-                              reason: 'Standard ttyACM character device with no host root escalation',
+                              reason:
+                                  'Standard ttyACM character device with no host root escalation',
                               actionColor: AppColors.info,
                               actionBg: AppColors.chipBlueBg,
                               icon: Icons.check_circle_rounded,
@@ -120,7 +191,8 @@ class PoliciesView extends StatelessWidget {
                             _PolicyRuleItem(
                               title: 'Proprietary Kernel Driver (Vendor 0xFF)',
                               action: 'ISOLATE → QEMU/KVM VM',
-                              reason: 'Third-party .ko driver must execute in guest kernel only',
+                              reason:
+                                  'Third-party .ko driver must execute in guest kernel only',
                               actionColor: AppColors.vmPurple,
                               actionBg: AppColors.chipPurpleBg,
                               icon: Icons.security_rounded,
@@ -129,7 +201,8 @@ class PoliciesView extends StatelessWidget {
                             _PolicyRuleItem(
                               title: 'Human Interface Devices (HID 0x03)',
                               action: 'DENY → ACCESS BLOCKED',
-                              reason: 'BadUSB & Rubber Ducky keystroke injection protection',
+                              reason:
+                                  'BadUSB & Rubber Ducky keystroke injection protection',
                               actionColor: AppColors.danger,
                               actionBg: AppColors.chipRedBg,
                               icon: Icons.block_rounded,
@@ -138,7 +211,8 @@ class PoliciesView extends StatelessWidget {
                             _PolicyRuleItem(
                               title: 'Mass Storage Controller (0x08)',
                               action: 'DENY → ACCESS BLOCKED',
-                              reason: 'Prevents untrusted USB mass-storage file execution',
+                              reason:
+                                  'Prevents untrusted USB mass-storage file execution',
                               actionColor: AppColors.danger,
                               actionBg: AppColors.chipRedBg,
                               icon: Icons.block_rounded,
@@ -152,7 +226,7 @@ class PoliciesView extends StatelessWidget {
               ),
               const SizedBox(width: 20),
 
-              // Right: .hades.yaml Manifest Preview
+              // Right: .hades.yaml Manifest Preview & Generator
               Expanded(
                 flex: 45,
                 child: Container(
@@ -170,7 +244,11 @@ class PoliciesView extends StatelessWidget {
                         children: [
                           Row(
                             children: const [
-                              Icon(Icons.code_rounded, size: 16, color: AppColors.logAudit),
+                              Icon(
+                                Icons.code_rounded,
+                                size: 16,
+                                color: AppColors.logAudit,
+                              ),
                               SizedBox(width: 8),
                               Text(
                                 '.hades.yaml Policy Manifest',
@@ -183,7 +261,10 @@ class PoliciesView extends StatelessWidget {
                             ],
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.heroPillBg,
                               borderRadius: BorderRadius.circular(10),
@@ -199,7 +280,103 @@ class PoliciesView extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
+                      // Preset selector & Init button
+                      Row(
+                        children: [
+                          Container(
+                            height: 32,
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.border.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedPreset,
+                                dropdownColor: AppColors.accent,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                icon: const Icon(
+                                  Icons.arrow_drop_down,
+                                  color: AppColors.white,
+                                  size: 16,
+                                ),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'esp32',
+                                    child: Text('Preset: esp32'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'stm32',
+                                    child: Text('Preset: stm32'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'pico',
+                                    child: Text('Preset: pico'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'arduino',
+                                    child: Text('Preset: arduino'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'kernel',
+                                    child: Text('Preset: kernel'),
+                                  ),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() => _selectedPreset = val);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _initManifest,
+                            icon: _isLoading
+                                ? const SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.white,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.file_upload_outlined,
+                                    size: 14,
+                                  ),
+                            label: Text(
+                              _isLoading ? 'Writing...' : 'Init Manifest',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
                       Expanded(
                         child: Container(
                           width: double.infinity,
@@ -207,30 +384,15 @@ class PoliciesView extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border.withValues(alpha: 0.1), width: 1),
+                            border: Border.all(
+                              color: AppColors.border.withValues(alpha: 0.1),
+                              width: 1,
+                            ),
                           ),
-                          child: const SingleChildScrollView(
+                          child: SingleChildScrollView(
                             child: Text(
-                              'schema_version: "1.0"\n'
-                              'policy:\n'
-                              '  enforce: strict\n'
-                              '  host_pollution_limit: 0%\n'
-                              'rules:\n'
-                              '  - match:\n'
-                              '      class: "0x02" # CDC-ACM\n'
-                              '    decision: "DOCKER_CONTAINER"\n'
-                              '    broker: "cgroup allow, unprivileged"\n'
-                              '\n'
-                              '  - match:\n'
-                              '      class: "0xFF" # Vendor specific\n'
-                              '    decision: "QEMU_KVM_VM"\n'
-                              '    broker: "libvirt hostdev hotplug"\n'
-                              '\n'
-                              '  - match:\n'
-                              '      class: ["0x03", "0x08"]\n'
-                              '    decision: "BLOCK"\n'
-                              '    reason: "HID/storage not approved"',
-                              style: TextStyle(
+                              displayYaml,
+                              style: const TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: 11,
                                 height: 1.45,
@@ -302,7 +464,10 @@ class _PolicyRuleItem extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: actionBg,
                         borderRadius: BorderRadius.circular(10),

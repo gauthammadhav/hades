@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../api/api_config.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../state/control_plane_controller.dart';
@@ -12,22 +13,70 @@ class SettingsView extends StatefulWidget {
 }
 
 class _SettingsViewState extends State<SettingsView> {
-  final TextEditingController _urlController = TextEditingController(text: 'ws://127.0.0.1:8000/ws/events');
+  final TextEditingController _restUrlController = TextEditingController(
+    text: 'http://127.0.0.1:8080',
+  );
+  final TextEditingController _tokenController = TextEditingController();
+  final TextEditingController _urlController = TextEditingController(
+    text: 'ws://127.0.0.1:8080/v1/ws/*',
+  );
   bool _isConnected = false;
+  String? _statusMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = context.read<ControlPlaneController>();
+      if (controller.repository != null) {
+        _restUrlController.text =
+            controller.repository!.apiClient.config.baseUrl;
+        _tokenController.text =
+            controller.repository!.apiClient.config.apiToken ?? '';
+        _urlController.text = controller.repository!.apiClient.config.wsUrl;
+      }
+      setState(() {
+        _isConnected = controller.isBackendConnected;
+      });
+    });
+  }
 
   Future<void> _toggleConnection() async {
     final controller = context.read<ControlPlaneController>();
     if (!_isConnected) {
-      setState(() => _isConnected = true);
+      final newConfig = ApiConfig(
+        baseUrl: _restUrlController.text.trim(),
+        apiToken: _tokenController.text.trim().isEmpty
+            ? null
+            : _tokenController.text.trim(),
+      );
+      controller.repository?.updateConfig(newConfig);
+
+      setState(() {
+        _statusMessage = 'Connecting...';
+      });
+
       await controller.connectToBackend(url: _urlController.text.trim());
+      final isOnline = await controller.repository?.checkHealth() ?? false;
+      setState(() {
+        _isConnected = controller.isBackendConnected;
+        _statusMessage = isOnline
+            ? 'Connected (Daemon Online)'
+            : 'Connected to WS (Health check pending)';
+      });
     } else {
-      setState(() => _isConnected = false);
       await controller.disconnectFromBackend();
+      setState(() {
+        _isConnected = false;
+        _statusMessage = 'Disconnected';
+      });
     }
   }
 
   @override
   void dispose() {
+    _restUrlController.dispose();
+    _tokenController.dispose();
     _urlController.dispose();
     super.dispose();
   }
@@ -67,9 +116,14 @@ class _SettingsViewState extends State<SettingsView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _isConnected ? AppColors.chipMintBg : AppColors.chipBlueBg,
+                color: _isConnected
+                    ? AppColors.chipMintBg
+                    : AppColors.chipBlueBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+                border: Border.all(
+                  color: AppColors.border,
+                  width: AppTheme.borderWidth,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -142,7 +196,10 @@ class _SettingsViewState extends State<SettingsView> {
                 decoration: BoxDecoration(
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                  border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+                  border: Border.all(
+                    color: AppColors.border,
+                    width: AppTheme.borderWidth,
+                  ),
                   boxShadow: AppTheme.softShadow,
                 ),
                 padding: const EdgeInsets.all(20),
@@ -165,15 +222,95 @@ class _SettingsViewState extends State<SettingsView> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
 
-                    // WebSocket URL Input
+                    // REST URL Label & Input
+                    const Text(
+                      'HADES Daemon Base URL (REST)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Container(
-                      height: 40,
+                      height: 38,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      alignment: Alignment.centerLeft,
+                      child: TextField(
+                        controller: _restUrlController,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                          color: AppColors.textPrimary,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                          hintText: 'http://127.0.0.1:8080',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Bearer Token Label & Input
+                    const Text(
+                      'API Bearer Token (optional)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 38,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      alignment: Alignment.centerLeft,
+                      child: TextField(
+                        controller: _tokenController,
+                        obscureText: true,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                          color: AppColors.textPrimary,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          isDense: true,
+                          hintText: 'HADES_API_TOKEN',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // WebSocket URL Label & Input
+                    const Text(
+                      'Event Stream Endpoint (WebSocket)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 38,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: AppColors.border),
                       ),
                       alignment: Alignment.centerLeft,
@@ -187,11 +324,23 @@ class _SettingsViewState extends State<SettingsView> {
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           isDense: true,
-                          hintText: 'ws://127.0.0.1:8000/ws/events',
+                          hintText: 'ws://127.0.0.1:8080/v1/ws/*',
                         ),
                       ),
                     ),
                     const SizedBox(height: 14),
+
+                    if (_statusMessage != null) ...[
+                      Text(
+                        _statusMessage!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: _isConnected ? AppColors.ok : AppColors.info,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
 
                     // Action Button
                     SizedBox(
@@ -200,12 +349,18 @@ class _SettingsViewState extends State<SettingsView> {
                       child: ElevatedButton(
                         onPressed: _toggleConnection,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _isConnected ? AppColors.danger : AppColors.primary,
+                          backgroundColor: _isConnected
+                              ? AppColors.danger
+                              : AppColors.primary,
                           foregroundColor: AppColors.white,
                           shape: const StadiumBorder(),
                           elevation: 0,
                         ),
-                        child: Text(_isConnected ? 'Disconnect WebSocket' : 'Connect WebSocket'),
+                        child: Text(
+                          _isConnected
+                              ? 'Disconnect from Backend'
+                              : 'Connect to Backend Daemon',
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -222,7 +377,7 @@ class _SettingsViewState extends State<SettingsView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
                           Text(
-                            '# Python Test Integration Script:',
+                            '# Launch HADES Core Daemon on Linux Host:',
                             style: TextStyle(
                               fontFamily: 'monospace',
                               fontSize: 10,
@@ -231,7 +386,7 @@ class _SettingsViewState extends State<SettingsView> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'python scripts/device_detector.py',
+                            'hadesd --host 0.0.0.0 --port 8080',
                             style: TextStyle(
                               fontFamily: 'monospace',
                               fontSize: 11,
@@ -275,7 +430,10 @@ class _DaemonStatusCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(AppTheme.innerTileRadius),
-        border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+        border: Border.all(
+          color: AppColors.border,
+          width: AppTheme.borderWidth,
+        ),
         boxShadow: AppTheme.softShadow,
       ),
       child: Row(

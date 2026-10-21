@@ -24,7 +24,10 @@ class WorkflowStepperCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+        border: Border.all(
+          color: AppColors.border,
+          width: AppTheme.borderWidth,
+        ),
         boxShadow: AppTheme.softShadow,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -65,7 +68,11 @@ class WorkflowStepperCard extends StatelessWidget {
                   } else {
                     // Line connector between step i and step i+1
                     final stepBefore = index ~/ 2 + 1;
-                    final isLineCompleted = _isLineGreen(stepBefore, currentStageNum, isBlocked);
+                    final isLineCompleted = _isLineGreen(
+                      stepBefore,
+                      currentStageNum,
+                      isBlocked,
+                    );
 
                     return Expanded(
                       flex: 5,
@@ -75,7 +82,9 @@ class WorkflowStepperCard extends StatelessWidget {
                           duration: const Duration(milliseconds: 250),
                           curve: Curves.easeInOut,
                           height: 2,
-                          color: isLineCompleted ? AppColors.ok : AppColors.border,
+                          color: isLineCompleted
+                              ? AppColors.ok
+                              : AppColors.border,
                         ),
                       ),
                     );
@@ -118,7 +127,8 @@ class _StepNode extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCurrent = stepNumber == currentStageNumber;
     final isPast = stepNumber < currentStageNumber;
-    final isBlockedAtThisStep = isBlocked && stepNumber == 3 && currentStageNumber >= 3;
+    final isBlockedAtThisStep =
+        isBlocked && stepNumber == 3 && currentStageNumber >= 3;
     final isSkipped = isBlocked && stepNumber > 3;
 
     Widget circleContent;
@@ -162,7 +172,9 @@ class _StepNode extends StatelessWidget {
       circleContent = Text(
         '$stepNumber',
         style: TextStyle(
-          color: isSkipped ? AppColors.textSecondary.withValues(alpha: 0.5) : AppColors.textSecondary,
+          color: isSkipped
+              ? AppColors.textSecondary.withValues(alpha: 0.5)
+              : AppColors.textSecondary,
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -170,7 +182,9 @@ class _StepNode extends StatelessWidget {
     }
 
     // Node labels
-    final shortLabel = stage.getDisplayLabel(isBlocked: isBlocked && stepNumber == 3);
+    final shortLabel = stage.getDisplayLabel(
+      isBlocked: isBlocked && stepNumber == 3,
+    );
     final rawName = stage.rawName;
     final isMuted = !isPast && !isCurrent && !isBlockedAtThisStep;
 
@@ -201,7 +215,9 @@ class _StepNode extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: isMuted ? AppColors.textSecondary.withValues(alpha: 0.6) : AppColors.textPrimary,
+            color: isMuted
+                ? AppColors.textSecondary.withValues(alpha: 0.6)
+                : AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 2),
@@ -216,7 +232,9 @@ class _StepNode extends StatelessWidget {
             fontFamilyFallback: const ['Courier New', 'Courier', 'monospace'],
             fontSize: 9,
             fontWeight: FontWeight.w500,
-            color: isMuted ? AppColors.textSecondary.withValues(alpha: 0.5) : AppColors.textSecondary,
+            color: isMuted
+                ? AppColors.textSecondary.withValues(alpha: 0.5)
+                : AppColors.textSecondary,
           ),
         ),
       ],

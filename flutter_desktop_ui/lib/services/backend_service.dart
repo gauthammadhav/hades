@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import '../models/scenario.dart';
 import '../models/stage.dart';
+import 'hades_repository.dart';
 
 abstract class BackendService {
   Stream<String> get eventStream;
@@ -15,7 +16,8 @@ abstract class BackendService {
 }
 
 class MockBackendService implements BackendService {
-  final StreamController<String> _eventController = StreamController<String>.broadcast();
+  final StreamController<String> _eventController =
+      StreamController<String>.broadcast();
   WebSocket? _webSocket;
   bool _isConnected = false;
 
@@ -48,9 +50,7 @@ class MockBackendService implements BackendService {
             '[broker] ${scenario.broker}',
           ];
         case Stage.sandboxProvisioned:
-          return [
-            '[fs] overlay mounted /workspace',
-          ];
+          return ['[fs] overlay mounted /workspace'];
         case Stage.sessionActive:
           return [
             '[session] IDE attached',
@@ -75,9 +75,7 @@ class MockBackendService implements BackendService {
             '[manifest] .hades.yaml matched, arch=${scenario.arch}',
           ];
         case Stage.policyEvaluated:
-          return [
-            '[policy] ALLOW -> QEMU_KVM_VM',
-          ];
+          return ['[policy] ALLOW -> QEMU_KVM_VM'];
         case Stage.sandboxProvisioned:
           return [
             '[broker] libvirt hostdev hotplug attached',
@@ -108,9 +106,7 @@ class MockBackendService implements BackendService {
             '[manifest] .hades.yaml matched, arch=-',
           ];
         case Stage.policyEvaluated:
-          return [
-            '[policy] DENY HID (0x03): ${scenario.reason}',
-          ];
+          return ['[policy] DENY HID (0x03): ${scenario.reason}'];
         default:
           return [];
       }
@@ -157,9 +153,13 @@ class MockBackendService implements BackendService {
   }
 
   @override
-  Future<void> connectWebSocket({String url = 'ws://127.0.0.1:8000/ws/events'}) async {
+  Future<void> connectWebSocket({
+    String url = 'ws://127.0.0.1:8000/ws/events',
+  }) async {
     try {
-      _webSocket = await WebSocket.connect(url).timeout(const Duration(seconds: 4));
+      _webSocket = await WebSocket.connect(
+        url,
+      ).timeout(const Duration(seconds: 4));
       _isConnected = true;
       _eventController.add('[websocket] Connected to $url');
 
@@ -194,5 +194,56 @@ class MockBackendService implements BackendService {
   void dispose() {
     _webSocket?.close();
     _eventController.close();
+  }
+}
+
+class HadesBackendService implements BackendService {
+  final HadesRepository repository;
+
+  HadesBackendService({HadesRepository? repository})
+    : repository = repository ?? HadesRepository();
+
+  @override
+  Stream<String> get eventStream => repository.logStream;
+
+  @override
+  List<Scenario> getScenarios() => repository.toScenarios();
+
+  @override
+  bool get isConnected => repository.wsClient.isConnected;
+
+  @override
+  List<String> getLogsForStage(Scenario scenario, Stage stage) {
+    final audits = repository.getCachedAudit(scenario.id);
+    if (audits.isNotEmpty) {
+      return audits.map((a) => a.toFormattedLog()).toList();
+    }
+    return MockBackendService().getLogsForStage(scenario, stage);
+  }
+
+  @override
+  List<String> getCumulativeLogs(Scenario scenario, Stage stage) {
+    final audits = repository.getCachedAudit(scenario.id);
+    if (audits.isNotEmpty) {
+      return audits.map((a) => a.toFormattedLog()).toList();
+    }
+    return MockBackendService().getCumulativeLogs(scenario, stage);
+  }
+
+  @override
+  Future<void> connectWebSocket({
+    String url = 'ws://127.0.0.1:8080/v1/ws/*',
+  }) async {
+    await repository.wsClient.connect(customUrl: url);
+  }
+
+  @override
+  Future<void> disconnectWebSocket() async {
+    await repository.wsClient.disconnect();
+  }
+
+  @override
+  void dispose() {
+    repository.dispose();
   }
 }

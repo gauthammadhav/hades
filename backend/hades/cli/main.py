@@ -24,6 +24,18 @@ app.command(name="shell", help="Open a shell in an active sandbox.")(shell_comma
 app.command(name="list", help="List active sandboxes and mapped hardware.")(list_command)
 app.command(name="down", help="Terminate a sandbox and audit cleanup.")(down_command)
 
+def serve_command(
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Bind host address."),
+    port: int = typer.Option(8080, "--port", "-p", help="Bind port number."),
+    reload: bool = typer.Option(False, "--reload", help="Enable live auto-reload."),
+):
+    """Start the HADES Core HTTP REST and WebSocket API service."""
+    import uvicorn
+    uvicorn.run("hades.api.app:app", host=host, port=port, reload=reload)
+
+
+app.command(name="serve", help="Start the HADES Core HTTP REST and WebSocket API service.")(serve_command)
+
 
 def version_callback(value: bool):
     if value:

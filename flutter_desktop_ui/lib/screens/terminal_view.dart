@@ -34,11 +34,23 @@ class _TerminalViewState extends State<TerminalView> {
     setState(() {
       _lines.add('> $text');
       if (text.toLowerCase() == 'help') {
-        _lines.add('[UART] Available commands: status, ping, reboot, idf-version, dump');
+        _lines.add(
+          '[UART] Available commands: status, ping, reboot, idf-version, dump, hades',
+        );
+      } else if (text.toLowerCase() == 'hades' ||
+          text.toLowerCase() == 'shell') {
+        _lines.add(
+          '[SECURITY] HADES Core intentionally exposes no remote shell over HTTP/WS.',
+        );
+        _lines.add(
+          '[SECURITY] To attach directly on the host runtime: hades shell <session-id>',
+        );
       } else if (text.toLowerCase() == 'ping') {
         _lines.add('[UART] PONG (latency: 1.2ms)');
       } else if (text.toLowerCase() == 'status') {
-        _lines.add('[UART] ESP32-S3: Core 0 [OK], Core 1 [OK], Free Heap: 284 KB, Flash: 8MB');
+        _lines.add(
+          '[UART] ESP32-S3: Core 0 [OK], Core 1 [OK], Free Heap: 284 KB, Flash: 8MB',
+        );
       } else {
         _lines.add('[UART] Command "$text" acknowledged by firmware.');
       }
@@ -98,7 +110,10 @@ class _TerminalViewState extends State<TerminalView> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.chipMintBg,
                     borderRadius: BorderRadius.circular(14),
@@ -106,7 +121,11 @@ class _TerminalViewState extends State<TerminalView> {
                   ),
                   child: Row(
                     children: const [
-                      Icon(Icons.radio_button_checked_rounded, size: 10, color: AppColors.ok),
+                      Icon(
+                        Icons.radio_button_checked_rounded,
+                        size: 10,
+                        color: AppColors.ok,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         '115200 8-N-1',
@@ -194,7 +213,9 @@ class _TerminalViewState extends State<TerminalView> {
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(19),
-                        border: Border.all(color: AppColors.border.withValues(alpha: 0.2)),
+                        border: Border.all(
+                          color: AppColors.border.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -217,7 +238,8 @@ class _TerminalViewState extends State<TerminalView> {
                                 fontSize: 12,
                               ),
                               decoration: const InputDecoration(
-                                hintText: 'Type command (e.g. status, ping, help)...',
+                                hintText:
+                                    'Type command (e.g. status, ping, help)...',
                                 hintStyle: TextStyle(
                                   color: AppColors.heroSubtext,
                                   fontSize: 11,

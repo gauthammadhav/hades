@@ -16,8 +16,11 @@ class HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isBlocked = scenario.isBlocked && currentStage == Stage.policyEvaluated;
-    final displayStageNumber = currentStage.number > 5 ? 5 : currentStage.number;
+    final isBlocked =
+        scenario.isBlocked && currentStage == Stage.policyEvaluated;
+    final displayStageNumber = currentStage.number > 5
+        ? 5
+        : currentStage.number;
     final progressFraction = (displayStageNumber / 5.0).clamp(0.0, 1.0);
 
     final statusText = scenario.isBlocked && currentStage.number >= 3
@@ -30,10 +33,7 @@ class HeroCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.heroGradientStart,
-            AppColors.heroGradientEnd,
-          ],
+          colors: [AppColors.heroGradientStart, AppColors.heroGradientEnd],
         ),
         boxShadow: AppTheme.softShadow,
       ),
@@ -80,7 +80,10 @@ class HeroCard extends StatelessWidget {
                     children: [
                       // Runtime pill
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.heroPillBg,
                           borderRadius: BorderRadius.circular(12),
@@ -192,7 +195,10 @@ class HeroCard extends StatelessWidget {
                           child: TweenAnimationBuilder<double>(
                             duration: const Duration(milliseconds: 250),
                             curve: Curves.easeInOut,
-                            tween: Tween<double>(begin: 0.0, end: progressFraction),
+                            tween: Tween<double>(
+                              begin: 0.0,
+                              end: progressFraction,
+                            ),
                             builder: (context, value, child) {
                               return FractionallySizedBox(
                                 alignment: Alignment.centerLeft,

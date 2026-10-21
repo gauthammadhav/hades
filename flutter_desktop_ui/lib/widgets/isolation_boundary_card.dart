@@ -48,7 +48,9 @@ class IsolationBoundaryCard extends StatelessWidget {
     } else if (scenario.runtime == Runtime.docker && currentStage.number >= 4) {
       connector2Color = AppColors.info;
     } else if (scenario.runtime == Runtime.qemu) {
-      connector2Color = currentStage.number >= 4 ? AppColors.vmPurple : AppColors.vmPurple.withValues(alpha: 0.5);
+      connector2Color = currentStage.number >= 4
+          ? AppColors.vmPurple
+          : AppColors.vmPurple.withValues(alpha: 0.5);
     } else {
       connector2Color = AppColors.border;
     }
@@ -80,7 +82,10 @@ class IsolationBoundaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+        border: Border.all(
+          color: AppColors.border,
+          width: AppTheme.borderWidth,
+        ),
         boxShadow: AppTheme.softShadow,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -103,10 +108,7 @@ class IsolationBoundaryCard extends StatelessWidget {
               SizedBox(height: 2),
               Text(
                 'Host → Broker → Sandbox',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -263,10 +265,7 @@ class _BoundaryNode extends StatelessWidget {
   final Color borderColor;
   final Widget child;
 
-  const _BoundaryNode({
-    required this.borderColor,
-    required this.child,
-  });
+  const _BoundaryNode({required this.borderColor, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -293,9 +292,7 @@ class _DashedLineConnector extends StatelessWidget {
     return SizedBox(
       width: 24,
       height: 2,
-      child: CustomPaint(
-        painter: _DashedLinePainter(color: color),
-      ),
+      child: CustomPaint(painter: _DashedLinePainter(color: color)),
     );
   }
 }
@@ -319,7 +316,10 @@ class _DashedLinePainter extends CustomPainter {
     while (startX < size.width) {
       canvas.drawLine(
         Offset(startX, size.height / 2),
-        Offset(startX + dashWidth > size.width ? size.width : startX + dashWidth, size.height / 2),
+        Offset(
+          startX + dashWidth > size.width ? size.width : startX + dashWidth,
+          size.height / 2,
+        ),
         paint,
       );
       startX += dashWidth + dashSpace;
@@ -327,5 +327,6 @@ class _DashedLinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _DashedLinePainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant _DashedLinePainter oldDelegate) =>
+      oldDelegate.color != color;
 }

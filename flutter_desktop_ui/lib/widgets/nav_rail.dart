@@ -5,11 +5,7 @@ class HadesNavRail extends StatelessWidget {
   final int activeIndex;
   final ValueChanged<int>? onIndexChanged;
 
-  const HadesNavRail({
-    super.key,
-    this.activeIndex = 0,
-    this.onIndexChanged,
-  });
+  const HadesNavRail({super.key, this.activeIndex = 0, this.onIndexChanged});
 
   @override
   Widget build(BuildContext context) {

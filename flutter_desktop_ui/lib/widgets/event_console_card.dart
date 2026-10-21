@@ -5,10 +5,7 @@ import '../core/theme/app_theme.dart';
 class EventConsoleCard extends StatefulWidget {
   final List<String> eventLogs;
 
-  const EventConsoleCard({
-    super.key,
-    required this.eventLogs,
-  });
+  const EventConsoleCard({super.key, required this.eventLogs});
 
   @override
   State<EventConsoleCard> createState() => _EventConsoleCardState();
@@ -104,7 +101,12 @@ class _EventConsoleCardState extends State<EventConsoleCard> {
                         line,
                         style: TextStyle(
                           fontFamily: 'monospace',
-                          fontFamilyFallback: const ['Courier New', 'Courier', 'Consolas', 'monospace'],
+                          fontFamilyFallback: const [
+                            'Courier New',
+                            'Courier',
+                            'Consolas',
+                            'monospace',
+                          ],
                           fontSize: 10.5,
                           height: 1.35,
                           color: _getLogColor(line),

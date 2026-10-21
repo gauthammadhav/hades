@@ -11,7 +11,8 @@ class StartupScreen extends StatefulWidget {
   State<StartupScreen> createState() => _StartupScreenState();
 }
 
-class _StartupScreenState extends State<StartupScreen> with SingleTickerProviderStateMixin {
+class _StartupScreenState extends State<StartupScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<double> _scaleAnim;
@@ -25,9 +26,10 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
       duration: const Duration(milliseconds: 700),
     );
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-    _scaleAnim = Tween<double>(begin: 0.96, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
-    );
+    _scaleAnim = Tween<double>(
+      begin: 0.96,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -46,7 +48,8 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 350),
-        pageBuilder: (context, animation, secondaryAnimation) => const DashboardScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const DashboardScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -56,7 +59,8 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     if (event is KeyDownEvent) {
-      if (event.logicalKey == LogicalKeyboardKey.enter || event.logicalKey == LogicalKeyboardKey.space) {
+      if (event.logicalKey == LogicalKeyboardKey.enter ||
+          event.logicalKey == LogicalKeyboardKey.space) {
         _launchDashboard();
         return KeyEventResult.handled;
       }
@@ -108,7 +112,10 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
                   scale: _scaleAnim,
                   child: SingleChildScrollView(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 24,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -120,7 +127,9 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
                               color: AppColors.logoRing,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppColors.heroProgressGreen.withValues(alpha: 0.3),
+                                color: AppColors.heroProgressGreen.withValues(
+                                  alpha: 0.3,
+                                ),
                                 width: 2,
                               ),
                               boxShadow: const [
@@ -145,7 +154,10 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
 
                           // Version pill
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.heroPillBg,
                               borderRadius: BorderRadius.circular(14),
@@ -196,10 +208,15 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
                           // Pre-Flight Diagnostic Status Card
                           Container(
                             width: 680,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 18,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.background,
-                              borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.cardRadius,
+                              ),
                               border: Border.all(
                                 color: AppColors.border,
                                 width: AppTheme.borderWidth,
@@ -209,7 +226,8 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
                             child: Column(
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: const [
                                     Expanded(
                                       child: Text(
@@ -235,7 +253,10 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
                                     ),
                                   ],
                                 ),
-                                const Divider(color: AppColors.border, height: 20),
+                                const Divider(
+                                  color: AppColors.border,
+                                  height: 20,
+                                ),
                                 Row(
                                   children: const [
                                     Expanded(
@@ -281,7 +302,10 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
                             height: 48,
                             child: ElevatedButton.icon(
                               onPressed: _launchDashboard,
-                              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                              icon: const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 18,
+                              ),
                               label: const Text(
                                 'Launch Control Plane',
                                 style: TextStyle(
@@ -293,7 +317,9 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.ok,
                                 foregroundColor: AppColors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 32),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 32,
+                                ),
                                 shape: const StadiumBorder(),
                                 elevation: 0,
                               ),
@@ -305,7 +331,11 @@ class _StartupScreenState extends State<StartupScreen> with SingleTickerProvider
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: const [
-                              Icon(Icons.keyboard_outlined, size: 14, color: AppColors.heroSubtext),
+                              Icon(
+                                Icons.keyboard_outlined,
+                                size: 14,
+                                color: AppColors.heroSubtext,
+                              ),
                               SizedBox(width: 6),
                               Text(
                                 'Press Enter or Space to launch',
@@ -350,10 +380,7 @@ class _PreflightItem extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 4),
         Row(
@@ -361,10 +388,7 @@ class _PreflightItem extends StatelessWidget {
             Container(
               width: 6,
               height: 6,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 6),
             Expanded(

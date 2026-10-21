@@ -6,7 +6,10 @@ paths, and detecting microcontroller resets during firmware flashing.
 
 from dataclasses import dataclass
 from typing import Dict, Iterator, Optional
-import pyudev
+try:
+    import pyudev
+except ImportError:
+    pyudev = None
 
 from hades.discovery.topology import extract_port_topology
 from hades.discovery.udev_scanner import _safe_attr, get_usb_tty_mapping
@@ -28,7 +31,7 @@ class DeviceMonitor:
     """Monitors live hardware events via pyudev netlink."""
 
     def __init__(self, manifest: Optional[HadesManifest] = None):
-        self.context = pyudev.Context()
+        self.context = pyudev.Context() if pyudev is not None else None
         self.resolver = TwoStageResolver(manifest=manifest)
         self.active_ports: Dict[str, DiscoveredDevice] = {}
 

@@ -7,10 +7,7 @@ import '../models/scenario.dart';
 class PolicyMatrixCard extends StatelessWidget {
   final Scenario scenario;
 
-  const PolicyMatrixCard({
-    super.key,
-    required this.scenario,
-  });
+  const PolicyMatrixCard({super.key, required this.scenario});
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +48,10 @@ class PolicyMatrixCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+        border: Border.all(
+          color: AppColors.border,
+          width: AppTheme.borderWidth,
+        ),
         boxShadow: AppTheme.softShadow,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -154,7 +154,9 @@ class _ReadOnlySwitch extends StatelessWidget {
       height: 16,
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: value ? AppColors.switchTrackActive : AppColors.switchTrackInactive,
+        color: value
+            ? AppColors.switchTrackActive
+            : AppColors.switchTrackInactive,
         borderRadius: BorderRadius.circular(8),
       ),
       child: AnimatedAlign(

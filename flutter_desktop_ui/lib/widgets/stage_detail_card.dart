@@ -10,6 +10,7 @@ class StageDetailCard extends StatelessWidget {
   final Stage currentStage;
   final VoidCallback onAttachIde;
   final VoidCallback onTriggerTeardown;
+  final VoidCallback? onResolveBridge;
 
   const StageDetailCard({
     super.key,
@@ -17,14 +18,18 @@ class StageDetailCard extends StatelessWidget {
     required this.currentStage,
     required this.onAttachIde,
     required this.onTriggerTeardown,
+    this.onResolveBridge,
   });
 
   @override
   Widget build(BuildContext context) {
     final isBlocked = scenario.isBlocked && currentStage.number >= 3;
-    final isStage5Active = currentStage == Stage.sessionActive && !scenario.isBlocked;
+    final isStage5Active =
+        currentStage == Stage.sessionActive && !scenario.isBlocked;
 
-    final displayStageNumber = currentStage.number > 5 ? 5 : currentStage.number;
+    final displayStageNumber = currentStage.number > 5
+        ? 5
+        : currentStage.number;
     final stageTitle = isBlocked
         ? 'Blocked'
         : currentStage.getDetailTitle(isBlocked: false);
@@ -37,7 +42,10 @@ class StageDetailCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+        border: Border.all(
+          color: AppColors.border,
+          width: AppTheme.borderWidth,
+        ),
         boxShadow: AppTheme.softShadow,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
@@ -150,6 +158,28 @@ class StageDetailCard extends StatelessWidget {
                 ],
               ),
             )
+          else if (currentStage == Stage.requirementsResolved &&
+              (scenario.id.contains('ambiguous') ||
+                  scenario.name.toLowerCase().contains('ambiguous')) &&
+              onResolveBridge != null)
+            SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: ElevatedButton.icon(
+                onPressed: onResolveBridge,
+                icon: const Icon(Icons.auto_fix_high_rounded, size: 16),
+                label: const Text(
+                  'Resolve Bridge (.hades.yaml)',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  shape: const StadiumBorder(),
+                  elevation: 0,
+                ),
+              ),
+            )
           else
             Row(
               children: [
@@ -232,14 +262,29 @@ class StageDetailCard extends StatelessWidget {
           MapEntry('Node', scenario.node),
         ];
       case Stage.requirementsResolved:
-        return [
+        final items = [
           MapEntry('Class', scenario.usbClass),
           MapEntry('Arch', scenario.arch),
           MapEntry('Toolchain', scenario.toolchains.join(', ')),
         ];
+        if (scenario.id.contains('ambiguous') ||
+            scenario.name.toLowerCase().contains('ambiguous')) {
+          items.add(
+            const MapEntry(
+              'Bridge Stage',
+              'Stage 2 Ambiguous (Needs Manifest)',
+            ),
+          );
+        }
+        return items;
       case Stage.policyEvaluated:
         return [
-          MapEntry('Decision', scenario.runtime == Runtime.docker ? 'DOCKER_CONTAINER' : 'QEMU_KVM_VM'),
+          MapEntry(
+            'Decision',
+            scenario.runtime == Runtime.docker
+                ? 'DOCKER_CONTAINER'
+                : 'QEMU_KVM_VM',
+          ),
           MapEntry('Reason', scenario.reason),
         ];
       case Stage.sandboxProvisioned:

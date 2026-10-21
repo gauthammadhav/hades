@@ -187,10 +187,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       scenarios: controller.scenarios,
                       selectedScenario: controller.selectedScenario,
                       onSelectScenario: (scenario) {
-                        controller.selectScenario(scenario, resetToStage1: true);
+                        controller.selectScenario(
+                          scenario,
+                          resetToStage1: true,
+                        );
                       },
                       onSimulatePlugin: () {
                         controller.startAutoRun();
+                      },
+                      onSelectPreset: (preset) {
+                        controller.loadSimulatedPreset(preset);
+                      },
+                      onRefreshHardware: () {
+                        controller.refreshFromBackend();
                       },
                     ),
                   ),
@@ -204,6 +213,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       currentStage: controller.currentStage,
                       onAttachIde: controller.attachIde,
                       onTriggerTeardown: controller.triggerTeardown,
+                      onResolveBridge: () {
+                        controller.resolveSelectedDevice();
+                      },
                     ),
                   ),
                   const SizedBox(width: 24),

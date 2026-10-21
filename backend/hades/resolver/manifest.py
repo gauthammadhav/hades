@@ -165,3 +165,17 @@ def generate_preset_manifest(preset: str, project_name: str = "embedded-firmware
             ),
         )
 
+
+def save_manifest(manifest: HadesManifest, target_file: Path) -> None:
+    """Save a HadesManifest model to a YAML file."""
+    manifest_yaml = yaml.dump(
+        manifest.model_dump(mode="json"),
+        sort_keys=False,
+        default_flow_style=False,
+    )
+    target_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(target_file, "w", encoding="utf-8") as f:
+        f.write("# HADES Workspace Manifest\n")
+        f.write("# Defines target microcontroller board, SDK, and isolation parameters.\n\n")
+        f.write(manifest_yaml)
+

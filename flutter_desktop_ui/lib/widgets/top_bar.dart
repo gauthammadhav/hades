@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
+import '../state/control_plane_controller.dart';
 
 class HadesTopBar extends StatelessWidget {
   const HadesTopBar({super.key});
@@ -31,10 +33,7 @@ class HadesTopBar extends StatelessWidget {
                 'Hardware-aware sandbox orchestration',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -53,7 +52,10 @@ class HadesTopBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+                border: Border.all(
+                  color: AppColors.border,
+                  width: AppTheme.borderWidth,
+                ),
               ),
               child: Row(
                 children: const [
@@ -86,7 +88,10 @@ class HadesTopBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.chipMintBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+                border: Border.all(
+                  color: AppColors.border,
+                  width: AppTheme.borderWidth,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -113,37 +118,47 @@ class HadesTopBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
 
-            // WebSocket simulated chip
-            Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: AppColors.chipBlueBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: AppColors.info,
-                      shape: BoxShape.circle,
+            // WebSocket simulated / live chip
+            Consumer<ControlPlaneController>(
+              builder: (context, controller, child) {
+                final isConnected = controller.isBackendConnected;
+                return Container(
+                  height: 32,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: isConnected
+                        ? AppColors.chipMintBg
+                        : AppColors.chipBlueBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.border,
+                      width: AppTheme.borderWidth,
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'WebSocket simulated',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: isConnected ? AppColors.ok : AppColors.info,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        isConnected ? 'WebSocket live' : 'WebSocket simulated',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
             const SizedBox(width: 12),
 

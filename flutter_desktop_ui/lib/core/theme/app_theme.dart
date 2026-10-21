@@ -9,16 +9,23 @@ class AppTheme {
   static const double borderWidth = 1.5;
 
   static List<BoxShadow> get softShadow => const [
-        BoxShadow(
-          color: AppColors.shadow,
-          offset: Offset(0, 3),
-          blurRadius: 10,
-          spreadRadius: 0,
-        ),
-      ];
+    BoxShadow(
+      color: AppColors.shadow,
+      offset: Offset(0, 3),
+      blurRadius: 10,
+      spreadRadius: 0,
+    ),
+  ];
 
   static ThemeData get lightTheme {
-    const fallbackFonts = ['Inter', 'Segoe UI', 'San Francisco', 'Helvetica Neue', 'Arial', 'sans-serif'];
+    const fallbackFonts = [
+      'Inter',
+      'Segoe UI',
+      'San Francisco',
+      'Helvetica Neue',
+      'Arial',
+      'sans-serif',
+    ];
 
     return ThemeData(
       useMaterial3: true,
@@ -42,10 +49,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(cardRadius)),
-          side: BorderSide(
-            color: AppColors.border,
-            width: borderWidth,
-          ),
+          side: BorderSide(color: AppColors.border, width: borderWidth),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(

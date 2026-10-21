@@ -5,8 +5,11 @@ and passes raw descriptor data to the TwoStageResolver.
 """
 
 from collections import defaultdict
-from typing import Dict, List, Optional
-import pyudev
+from typing import Any, Dict, List, Optional
+try:
+    import pyudev
+except ImportError:
+    pyudev = None
 
 from hades.discovery.topology import extract_port_topology
 from hades.models.device import (
@@ -18,7 +21,7 @@ from hades.models.manifest import HadesManifest
 from hades.resolver.two_stage import TwoStageResolver
 
 
-def _safe_attr(device: pyudev.Device, attr: str, default: str = "") -> str:
+def _safe_attr(device: Any, attr: str, default: str = "") -> str:
     """Safely retrieve a sysfs attribute string without raising exceptions."""
     try:
         val = device.attributes.asstring(attr)
@@ -29,7 +32,7 @@ def _safe_attr(device: pyudev.Device, attr: str, default: str = "") -> str:
         return str(prop_val).strip() if prop_val else default
 
 
-def get_usb_tty_mapping(context: pyudev.Context) -> Dict[str, List[str]]:
+def get_usb_tty_mapping(context: Any) -> Dict[str, List[str]]:
     """
     Build a map of USB sysfs paths to their child TTY device nodes.
     
@@ -37,6 +40,8 @@ def get_usb_tty_mapping(context: pyudev.Context) -> Dict[str, List[str]]:
         Dict mapping USB device sys_path -> list of /dev/tty* nodes (e.g. ['/dev/ttyUSB0'])
     """
     mapping: Dict[str, List[str]] = defaultdict(list)
+    if context is None:
+        return mapping
     try:
         for tty_dev in context.list_devices(subsystem="tty"):
             parent_usb = tty_dev.find_parent("usb", "usb_device")
@@ -50,7 +55,7 @@ def get_usb_tty_mapping(context: pyudev.Context) -> Dict[str, List[str]]:
 def scan_usb_devices(
     manifest: Optional[HadesManifest] = None,
     include_all: bool = False,
-    context: Optional[pyudev.Context] = None,
+    context: Any = None,
 ) -> List[DiscoveredDevice]:
     """
     Scan all connected USB devices and resolve them using Two-Stage Discovery.
@@ -63,7 +68,11 @@ def scan_usb_devices(
     Returns:
         List of resolved DiscoveredDevice instances.
     """
-    ctx = context or pyudev.Context()
+    if context is None and pyudev is None:
+        return []
+    ctx = context or (pyudev.Context() if pyudev is not None else None)
+    if ctx is None:
+        return []
     tty_map = get_usb_tty_mapping(ctx)
     resolver = TwoStageResolver(manifest=manifest)
     discovered: List[DiscoveredDevice] = []

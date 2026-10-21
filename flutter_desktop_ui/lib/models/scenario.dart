@@ -12,7 +12,8 @@ class Scenario {
   final List<String> toolchains;
   final String broker;
   final String reason;
-  final List<bool> rules; // [Allow-listed class, Kernel module required, Serial / JTAG only, HID / mass-storage class]
+  final List<bool>
+  rules; // [Allow-listed class, Kernel module required, Serial / JTAG only, HID / mass-storage class]
 
   const Scenario({
     required this.id,

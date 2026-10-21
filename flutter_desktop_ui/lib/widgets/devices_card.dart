@@ -9,6 +9,8 @@ class DevicesCard extends StatelessWidget {
   final Scenario selectedScenario;
   final ValueChanged<Scenario> onSelectScenario;
   final VoidCallback onSimulatePlugin;
+  final ValueChanged<String>? onSelectPreset;
+  final VoidCallback? onRefreshHardware;
 
   const DevicesCard({
     super.key,
@@ -16,6 +18,8 @@ class DevicesCard extends StatelessWidget {
     required this.selectedScenario,
     required this.onSelectScenario,
     required this.onSimulatePlugin,
+    this.onSelectPreset,
+    this.onRefreshHardware,
   });
 
   @override
@@ -24,7 +28,10 @@ class DevicesCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppColors.border, width: AppTheme.borderWidth),
+        border: Border.all(
+          color: AppColors.border,
+          width: AppTheme.borderWidth,
+        ),
         boxShadow: AppTheme.softShadow,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -32,13 +39,98 @@ class DevicesCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Devices',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Devices',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              if (onSelectPreset != null || onRefreshHardware != null)
+                PopupMenuButton<String>(
+                  tooltip: 'Hardware Presets & pyudev Discovery',
+                  icon: const Icon(
+                    Icons.tune_rounded,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onSelected: (val) {
+                    if (val == 'live_scan') {
+                      onRefreshHardware?.call();
+                    } else {
+                      onSelectPreset?.call(val);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'live_scan',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.refresh_rounded,
+                            size: 16,
+                            color: AppColors.ok,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'pyudev Live Scan',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'esp32-native',
+                      child: Text(
+                        'ESP32-S3 (Stage 1 Native USB)',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'esp32-cp2102-ambiguous',
+                      child: Text(
+                        'CP2102 Bridge (Stage 2 Ambiguous)',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'esp32-cp2102-resolved',
+                      child: Text(
+                        'CP2102 Bridge (Stage 2 Resolved)',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'stlink-v2',
+                      child: Text(
+                        'ST-Link/V2 Native Match',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'custom-kernel-device',
+                      child: Text(
+                        'Custom CAN Driver (VM Policy)',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'hid-rubberducky',
+                      child: Text(
+                        'HID BadUSB (Blocked Policy)',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
           ),
           const SizedBox(height: 12),
 
@@ -80,12 +172,21 @@ class DevicesCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppTheme.innerTileRadius),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.surface : AppColors.transparent,
-                      borderRadius: BorderRadius.circular(AppTheme.innerTileRadius),
+                      color: isSelected
+                          ? AppColors.surface
+                          : AppColors.transparent,
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.innerTileRadius,
+                      ),
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : AppColors.transparent,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.transparent,
                         width: AppTheme.borderWidth,
                       ),
                     ),

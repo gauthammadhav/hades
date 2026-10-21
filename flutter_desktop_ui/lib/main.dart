@@ -13,11 +13,7 @@ class HadesApp extends StatelessWidget {
   final ControlPlaneController? controller;
   final Widget? home;
 
-  const HadesApp({
-    super.key,
-    this.controller,
-    this.home,
-  });
+  const HadesApp({super.key, this.controller, this.home});
 
   @override
   Widget build(BuildContext context) {

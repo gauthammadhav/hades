@@ -3,9 +3,12 @@
 import asyncio
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AsyncIterator, Optional
+from typing import Any, AsyncIterator, Optional
 
-import pyudev
+try:
+    import pyudev
+except ImportError:
+    pyudev = None
 
 from hades.discovery.udev_scanner import scan_usb_devices
 from hades.models.device import DiscoveredDevice
@@ -25,10 +28,16 @@ class UdevWatcher:
     def __init__(
         self,
         workspace: Optional[Path] = None,
-        context: Optional[pyudev.Context] = None,
-        monitor: Optional[pyudev.Monitor] = None,
+        context: Any = None,
+        monitor: Any = None,
     ):
-        self.context = context or pyudev.Context()
+        if context is not None:
+            self.context = context
+        elif pyudev is not None:
+            self.context = pyudev.Context()
+        else:
+            self.context = None
+
         self.workspace = workspace
         self.manifest, manifest_error = load_manifest(workspace_dir=workspace)
         if manifest_error and workspace is not None:
@@ -37,11 +46,13 @@ class UdevWatcher:
         self._active_devices: dict[str, DiscoveredDevice] = {}
         if monitor is not None:
             self._monitor = monitor
-        else:
+        elif self.context is not None and pyudev is not None:
             self._monitor = pyudev.Monitor.from_netlink(self.context)
             self._monitor.filter_by(subsystem="usb")
             self._monitor.filter_by(subsystem="tty")
             self._monitor.start()
+        else:
+            self._monitor = None
 
     def cold_plug(self) -> list[UdevEvent]:
         """Scan devices already present when the watcher starts."""
