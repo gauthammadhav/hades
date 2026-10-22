@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/startup_screen.dart';
-import 'state/control_plane_controller.dart';
+import 'state/dashboard_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,7 +10,7 @@ void main() {
 }
 
 class HadesApp extends StatelessWidget {
-  final ControlPlaneController? controller;
+  final DashboardController? controller;
   final Widget? home;
 
   const HadesApp({super.key, this.controller, this.home});
@@ -18,21 +18,21 @@ class HadesApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = MaterialApp(
-      title: 'HADES Control Plane',
+      title: 'HADES Hardware Dashboard',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme,
       home: home ?? const StartupScreen(),
     );
 
     if (controller != null) {
-      return ChangeNotifierProvider<ControlPlaneController>.value(
+      return ChangeNotifierProvider<DashboardController>.value(
         value: controller!,
         child: app,
       );
     }
 
-    return ChangeNotifierProvider<ControlPlaneController>(
-      create: (_) => ControlPlaneController(),
+    return ChangeNotifierProvider<DashboardController>(
+      create: (_) => DashboardController(),
       child: app,
     );
   }

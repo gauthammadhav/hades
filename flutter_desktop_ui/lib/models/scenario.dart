@@ -32,7 +32,79 @@ class Scenario {
 
   bool get isBlocked => runtime.isBlocked;
 
+  bool get isStandby => id == 'standby';
+
   int get maxStageNumber => isBlocked ? 3 : 5;
+
+  static const Scenario standby = Scenario(
+    id: 'standby',
+    name: 'No Device Detected',
+    vidPid: '----:----',
+    busPath: 'usb --',
+    node: 'none',
+    usbClass: 'Awaiting Hardware',
+    runtime: Runtime.docker,
+    arch: 'Awaiting device',
+    toolchains: [],
+    broker: 'Netlink listener active',
+    reason: 'Plug in a physical USB device or run detection script',
+    rules: [false, false, false, false],
+  );
+
+  factory Scenario.fromPayload(Map<String, dynamic> data) {
+    final id =
+        data['scenario_id'] as String? ?? data['id'] as String? ?? 'detected_dev';
+    final name = data['name'] as String? ?? 'USB Device';
+    final vidPid = data['vid_pid'] as String? ?? '0000:0000';
+    final busPath = data['bus_path'] as String? ?? 'usb 1-1';
+    final node = data['node'] as String? ?? '/dev/ttyUSB0';
+    final usbClass = data['usb_class'] as String? ?? 'CDC-ACM (0x02)';
+
+    Runtime runtime = Runtime.docker;
+    final runtimeStr = (data['runtime'] as String? ?? '').toUpperCase();
+    if (runtimeStr.contains('QEMU') || runtimeStr.contains('VM')) {
+      runtime = Runtime.qemu;
+    } else if (runtimeStr.contains('BLOCK') ||
+        runtimeStr.contains('DENY') ||
+        usbClass.contains('HID')) {
+      runtime = Runtime.blocked;
+    }
+
+    String arch = 'xtensa-esp32s3-elf';
+    List<String> toolchains = ['idf.py', 'openocd'];
+    List<bool> rules = [true, false, true, false];
+    String broker = 'cgroup device allow, no --privileged';
+    String reason = 'Device approved for development sandbox';
+
+    if (runtime == Runtime.qemu) {
+      arch = 'arm-none-eabi';
+      toolchains = ['openocd', 'make'];
+      rules = [true, true, false, false];
+      broker = 'libvirt hostdev hotplug, CoW qcow2 VM';
+      reason = 'Proprietary driver requires QEMU/KVM VM';
+    } else if (runtime == Runtime.blocked) {
+      arch = '-';
+      toolchains = [];
+      rules = [false, false, false, true];
+      broker = 'none, access denied';
+      reason = 'HID / Mass storage device blocked by policy';
+    }
+
+    return Scenario(
+      id: id,
+      name: name,
+      vidPid: vidPid,
+      busPath: busPath,
+      node: node,
+      usbClass: usbClass,
+      runtime: runtime,
+      arch: arch,
+      toolchains: toolchains,
+      broker: broker,
+      reason: reason,
+      rules: rules,
+    );
+  }
 
   static const List<Scenario> mockScenarios = [
     Scenario(

@@ -136,124 +136,168 @@ class DevicesCard extends StatelessWidget {
 
           // Device list
           Expanded(
-            child: ListView.separated(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: scenarios.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final scenario = scenarios[index];
-                final isSelected = scenario.id == selectedScenario.id;
-
-                Color avatarBg;
-                Color avatarIconColor;
-                Color statusDotColor;
-
-                switch (scenario.runtime) {
-                  case Runtime.docker:
-                    avatarBg = AppColors.chipMintBg;
-                    avatarIconColor = AppColors.textPrimary;
-                    statusDotColor = AppColors.info;
-                    break;
-                  case Runtime.qemu:
-                    avatarBg = AppColors.chipPurpleBg;
-                    avatarIconColor = AppColors.vmPurple;
-                    statusDotColor = AppColors.vmPurple;
-                    break;
-                  case Runtime.blocked:
-                    avatarBg = AppColors.chipMintBg;
-                    avatarIconColor = AppColors.textPrimary;
-                    statusDotColor = AppColors.danger;
-                    break;
-                }
-
-                return InkWell(
-                  onTap: () => onSelectScenario(scenario),
-                  borderRadius: BorderRadius.circular(AppTheme.innerTileRadius),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.surface
-                          : AppColors.transparent,
-                      borderRadius: BorderRadius.circular(
-                        AppTheme.innerTileRadius,
-                      ),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.transparent,
-                        width: AppTheme.borderWidth,
+            child: scenarios.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: AppColors.chipMintBg,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.cable_rounded,
+                              size: 22,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'No Devices Connected',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Connect a USB device or run detector script to detect.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        // Avatar icon tile
-                        Container(
-                          width: 36,
-                          height: 36,
+                  )
+                : ListView.separated(
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: scenarios.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final scenario = scenarios[index];
+                      final isSelected = scenario.id == selectedScenario.id;
+
+                      Color avatarBg;
+                      Color avatarIconColor;
+                      Color statusDotColor;
+
+                      switch (scenario.runtime) {
+                        case Runtime.docker:
+                          avatarBg = AppColors.chipMintBg;
+                          avatarIconColor = AppColors.textPrimary;
+                          statusDotColor = AppColors.info;
+                          break;
+                        case Runtime.qemu:
+                          avatarBg = AppColors.chipPurpleBg;
+                          avatarIconColor = AppColors.vmPurple;
+                          statusDotColor = AppColors.vmPurple;
+                          break;
+                        case Runtime.blocked:
+                          avatarBg = AppColors.chipMintBg;
+                          avatarIconColor = AppColors.textPrimary;
+                          statusDotColor = AppColors.danger;
+                          break;
+                      }
+
+                      return InkWell(
+                        onTap: () => onSelectScenario(scenario),
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.innerTileRadius),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
-                            color: avatarBg,
-                            borderRadius: BorderRadius.circular(10),
+                            color: isSelected
+                                ? AppColors.surface
+                                : AppColors.transparent,
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.innerTileRadius,
+                            ),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.transparent,
+                              width: AppTheme.borderWidth,
+                            ),
                           ),
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.usb_rounded,
-                            size: 18,
-                            color: avatarIconColor,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Title & Subtitle
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
+                          child: Row(
                             children: [
-                              Text(
-                                scenario.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
+                              // Avatar icon tile
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: avatarBg,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  Icons.usb_rounded,
+                                  size: 18,
+                                  color: avatarIconColor,
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${scenario.busPath} · ${scenario.vidPid}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
+                              const SizedBox(width: 12),
+
+                              // Title & Subtitle
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      scenario.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${scenario.busPath} · ${scenario.vidPid}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Status color dot
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: statusDotColor,
+                                  shape: BoxShape.circle,
                                 ),
                               ),
                             ],
                           ),
                         ),
-
-                        // Status color dot
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: statusDotColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           const SizedBox(height: 12),
 

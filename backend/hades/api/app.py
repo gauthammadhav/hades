@@ -1,8 +1,16 @@
 """FastAPI application factory for HADES Core."""
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from hades.api.routes import router
+from hades.api.routes import router, start_device_monitor
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """Start background tasks on startup."""
+    start_device_monitor()
+    yield
 
 
 def create_app() -> FastAPI:
@@ -11,6 +19,7 @@ def create_app() -> FastAPI:
         title="HADES Core Control Plane API",
         version="0.1.0",
         description="Hardware-Aware Development Sandbox API for Flutter Desktop Integration",
+        lifespan=_lifespan,
     )
 
     # Enable CORS for desktop and web presentation clients
@@ -37,3 +46,4 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+

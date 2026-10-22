@@ -16,16 +16,19 @@ class HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isStandby = scenario.isStandby;
     final isBlocked =
         scenario.isBlocked && currentStage == Stage.policyEvaluated;
-    final displayStageNumber = currentStage.number > 5
-        ? 5
-        : currentStage.number;
-    final progressFraction = (displayStageNumber / 5.0).clamp(0.0, 1.0);
+    final displayStageNumber = isStandby
+        ? 0
+        : (currentStage.number > 5 ? 5 : currentStage.number);
+    final progressFraction = isStandby ? 0.0 : (displayStageNumber / 5.0).clamp(0.0, 1.0);
 
-    final statusText = scenario.isBlocked && currentStage.number >= 3
-        ? 'Blocked by policy'
-        : currentStage.getHeroStatusText(isBlocked: false);
+    final statusText = isStandby
+        ? 'Awaiting USB connection...'
+        : (scenario.isBlocked && currentStage.number >= 3
+            ? 'Blocked by policy'
+            : currentStage.getHeroStatusText(isBlocked: false));
 
     return Container(
       decoration: BoxDecoration(
@@ -101,7 +104,7 @@ class HeroCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              scenario.runtime.label,
+                              isStandby ? 'STANDBY' : scenario.runtime.label,
                               style: const TextStyle(
                                 color: AppColors.white,
                                 fontSize: 11,
@@ -130,7 +133,9 @@ class HeroCard extends StatelessWidget {
 
                       // Bus · VID:PID · Node
                       Text(
-                        '${scenario.busPath} · ${scenario.vidPid} · ${scenario.node}',
+                        isStandby
+                            ? 'Netlink listener online · Ready for physical or simulated plug-in'
+                            : '${scenario.busPath} · ${scenario.vidPid} · ${scenario.node}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -150,31 +155,40 @@ class HeroCard extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: isBlocked
-                                      ? AppColors.heroProgressRed
-                                      : AppColors.heroProgressGreen,
-                                  shape: BoxShape.circle,
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: isBlocked
+                                        ? AppColors.heroProgressRed
+                                        : AppColors.heroProgressGreen,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                statusText,
-                                style: const TextStyle(
-                                  color: AppColors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    statusText,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: AppColors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
-                            'Stage $displayStageNumber/5',
+                            isStandby
+                                ? 'Stage 0/5'
+                                : 'Stage $displayStageNumber/5',
                             style: const TextStyle(
                               color: AppColors.heroSubtext,
                               fontSize: 12,

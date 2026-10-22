@@ -61,6 +61,7 @@ async def broadcast(payload: dict):
     """Broadcast JSON payload to all connected Flutter clients."""
     if not CONNECTED_CLIENTS:
         print("  [!] No Flutter clients connected. Event queued.")
+        print("  --> In the Flutter App: open Settings (gear icon) and click 'Connect to Backend Daemon'.")
         return
 
     message = json.dumps(payload)
@@ -112,11 +113,12 @@ async def interactive_cli():
     print("  [3] Plug in: Unauthorized USB Attack (HID)")
     print("  [4] Advance Next Stage (+1)")
     print("  [5] Trigger Teardown")
+    print("  [c] Unplug / Disconnect All Devices")
     print("  [q] Quit Server")
     print("=" * 60)
 
     while True:
-        choice = await loop.run_in_executor(None, input, "\nSelect hardware action (1-5, q): ")
+        choice = await loop.run_in_executor(None, input, "\nSelect hardware action (1-5, c, q): ")
         choice = choice.strip()
 
         if choice in SCENARIOS:
@@ -126,6 +128,11 @@ async def interactive_cli():
                 "type": "DEVICE_PLUGGED",
                 "scenario_id": sc["id"],
                 "name": sc["name"],
+                "vid_pid": sc["vid_pid"],
+                "bus_path": sc["bus_path"],
+                "node": sc["node"],
+                "usb_class": sc["usb_class"],
+                "runtime": sc["runtime"],
                 "stage": 1,
                 "log": sc["log"]
             }
@@ -149,6 +156,14 @@ async def interactive_cli():
                 "log": "[teardown] Overlay discarded, 0% host pollution verified"
             }
             print("\n>> Triggering teardown verification")
+            await broadcast(payload)
+
+        elif choice.lower() == "c":
+            payload = {
+                "type": "DEVICE_UNPLUGGED",
+                "log": "[netlink] USB hardware disconnected. Netlink bus cleared."
+            }
+            print("\n>> Unplugging all connected USB devices")
             await broadcast(payload)
 
         elif choice.lower() == "q":

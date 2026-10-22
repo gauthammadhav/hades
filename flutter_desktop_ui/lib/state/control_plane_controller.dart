@@ -23,13 +23,28 @@ class ControlPlaneController extends ChangeNotifier {
     BackendService? backendService,
     Scenario? initialScenario,
     Stage? initialStage,
+    bool startEmpty = false,
   }) : _backendService = backendService ?? HadesBackendService() {
-    scenarios = _backendService.getScenarios();
-    selectedScenario = initialScenario ?? scenarios.first;
-    currentStage = initialStage ?? Stage.sessionActive;
-    eventLogs = List<String>.from(
-      _backendService.getCumulativeLogs(selectedScenario, currentStage),
-    );
+    if (startEmpty && initialScenario == null) {
+      // Production app startup: 0 connected devices until dynamic USB detection
+      scenarios = [];
+      selectedScenario = Scenario.standby;
+      currentStage = Stage.deviceDetected;
+      eventLogs = [
+        '[hades] Hardware Discovery Daemon initialized.',
+        '[hades] Netlink socket listening for USB hotplug events.',
+        '[hades] Waiting for physical USB connection or detector script...',
+      ];
+    } else {
+      scenarios = initialScenario != null
+          ? [initialScenario]
+          : _backendService.getScenarios();
+      selectedScenario = initialScenario ?? scenarios.first;
+      currentStage = initialStage ?? Stage.sessionActive;
+      eventLogs = List<String>.from(
+        _backendService.getCumulativeLogs(selectedScenario, currentStage),
+      );
+    }
 
     // Listen to real-time events from BackendService / WebSocket
     _eventSubscription = _backendService.eventStream.listen(
@@ -47,7 +62,7 @@ class ControlPlaneController extends ChangeNotifier {
   bool get isBackendConnected => _backendService.isConnected;
 
   DeviceDescriptor? get selectedDeviceDescriptor {
-    if (repository == null) return null;
+    if (repository == null || selectedScenario.isStandby) return null;
     return repository!.devices.cast<DeviceDescriptor?>().firstWhere(
       (d) => d != null && d.stableId == selectedScenario.id,
       orElse: () => null,
@@ -61,9 +76,13 @@ class ControlPlaneController extends ChangeNotifier {
         simulate: simulate,
       );
       await repository!.refreshSessions();
-      scenarios = _backendService.getScenarios();
-      if (!scenarios.any((s) => s.id == selectedScenario.id)) {
-        selectedScenario = scenarios.first;
+      final fresh = _backendService.getScenarios();
+      if (fresh.isNotEmpty) {
+        scenarios = fresh;
+        if (selectedScenario.isStandby ||
+            !scenarios.any((s) => s.id == selectedScenario.id)) {
+          selectedScenario = scenarios.first;
+        }
       }
       notifyListeners();
     }
@@ -72,17 +91,25 @@ class ControlPlaneController extends ChangeNotifier {
   Future<void> loadSimulatedPreset(String preset, {String? workspace}) async {
     if (repository != null) {
       await repository!.loadSimulatedPreset(preset, workspace: workspace);
-      scenarios = _backendService.getScenarios();
-      final matching = scenarios.firstWhere(
-        (s) =>
-            s.id.contains(preset) ||
-            s.name.toLowerCase().contains(preset.split('-').first),
-        orElse: () => scenarios.first,
-      );
-      selectScenario(matching, resetToStage1: true);
-      eventLogs.add('[simulation] Loaded hardware preset: $preset');
-      notifyListeners();
+      final fresh = _backendService.getScenarios();
+      for (final s in fresh) {
+        if (!scenarios.any((x) => x.id == s.id)) {
+          scenarios.add(s);
+        }
+      }
     }
+    final matching = Scenario.mockScenarios.firstWhere(
+      (s) =>
+          s.id.contains(preset) ||
+          s.name.toLowerCase().contains(preset.split('-').first),
+      orElse: () => Scenario.mockScenarios.first,
+    );
+    if (!scenarios.any((s) => s.id == matching.id)) {
+      scenarios.add(matching);
+    }
+    selectScenario(matching, resetToStage1: true);
+    eventLogs.add('[simulation] Loaded hardware preset: $preset');
+    notifyListeners();
   }
 
   Future<void> resolveSelectedDevice({String? workspace}) async {
@@ -248,16 +275,30 @@ class ControlPlaneController extends ChangeNotifier {
 
         // Backward compatibility with legacy simulator events
         if (type == 'DEVICE_PLUGGED') {
-          final scenarioId = data['scenario_id'] as String?;
-          final target = scenarios.firstWhere(
-            (s) => s.id == scenarioId,
-            orElse: () => scenarios.first,
-          );
+          final scenarioId =
+              data['scenario_id'] as String? ?? data['id'] as String? ?? 'esp32_s3';
+          Scenario target;
+          final existingIdx = scenarios.indexWhere((s) => s.id == scenarioId);
+          if (existingIdx >= 0) {
+            target = scenarios[existingIdx];
+          } else {
+            final match = Scenario.mockScenarios.cast<Scenario?>().firstWhere(
+              (s) => s?.id == scenarioId,
+              orElse: () => null,
+            );
+            target = match ?? Scenario.fromPayload(data);
+            scenarios.add(target);
+          }
+
           selectScenario(target, resetToStage1: true);
           if (data['log'] != null) {
             eventLogs.add(data['log'] as String);
-            notifyListeners();
+          } else {
+            eventLogs.add(
+              '[netlink] add ${target.busPath} ${target.vidPid} ${target.node}',
+            );
           }
+          notifyListeners();
           return;
         } else if (type == 'STAGE_ADVANCE') {
           final stageNum = data['stage'] as int?;
@@ -269,6 +310,17 @@ class ControlPlaneController extends ChangeNotifier {
             notifyListeners();
             return;
           }
+        } else if (type == 'DEVICE_UNPLUGGED') {
+          scenarios.clear();
+          selectedScenario = Scenario.standby;
+          currentStage = Stage.deviceDetected;
+          if (data['log'] != null) {
+            eventLogs.add(data['log'] as String);
+          } else {
+            eventLogs.add('[netlink] USB hardware disconnected.');
+          }
+          notifyListeners();
+          return;
         }
       }
     } catch (_) {
@@ -291,9 +343,24 @@ class ControlPlaneController extends ChangeNotifier {
         currentStage = Stage.policyEvaluated;
       }
     }
-    eventLogs = List<String>.from(
-      _backendService.getCumulativeLogs(selectedScenario, currentStage),
-    );
+    if (scenario.isStandby) {
+      eventLogs = [
+        '[hades] Hardware Discovery Daemon initialized.',
+        '[hades] Netlink socket listening for USB hotplug events.',
+        '[hades] Waiting for physical USB connection or detector script...',
+      ];
+    } else {
+      final baseLogs =
+          _backendService.getCumulativeLogs(selectedScenario, currentStage);
+      eventLogs = List<String>.from(
+        baseLogs.isNotEmpty
+            ? baseLogs
+            : [
+                '[netlink] add ${selectedScenario.busPath} ${selectedScenario.vidPid} ${selectedScenario.node}',
+                '[pyudev] class: ${selectedScenario.usbClass}',
+              ],
+      );
+    }
     notifyListeners();
   }
 
@@ -314,6 +381,14 @@ class ControlPlaneController extends ChangeNotifier {
 
   void startAutoRun() {
     stopAutoRun();
+
+    if (selectedScenario.isStandby) {
+      final defaultDev = Scenario.mockScenarios.first;
+      if (!scenarios.any((s) => s.id == defaultDev.id)) {
+        scenarios.add(defaultDev);
+      }
+      selectedScenario = defaultDev;
+    }
 
     currentStage = Stage.deviceDetected;
     eventLogs = List<String>.from(

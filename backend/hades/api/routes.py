@@ -1,9 +1,11 @@
 """HADES API Route handlers."""
 
+import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
 import shutil
 import subprocess
+import time
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
@@ -31,6 +33,68 @@ except ImportError:
     pyudev = None
 
 router = APIRouter(prefix="/v1")
+
+# ---------------------------------------------------------------------------
+# Background device monitor: runs UdevWatcher and broadcasts events to WS hub
+# ---------------------------------------------------------------------------
+
+_monitor_task: Optional[asyncio.Task] = None  # type: ignore[type-arg]
+
+
+async def _device_monitor_loop() -> None:
+    """Background loop that streams device events into the WebSocket hub."""
+    hub = get_ws_hub()
+
+    import sys
+    if sys.platform == "win32":
+        try:
+            from hades.discovery.windows_scanner import windows_device_event_stream
+            async for event in windows_device_event_stream():
+                if event.device is not None:
+                    payload = {
+                        "event": "device",
+                        "action": event.action,
+                        "device": event.device.model_dump(),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "monotonic_ns": time.monotonic_ns(),
+                    }
+                    await hub.broadcast(payload, topic="devices")
+        except Exception:
+            pass
+        return
+
+    if pyudev is None:
+        return
+    try:
+        from hades.discovery.udev_watcher import UdevWatcher
+        watcher = UdevWatcher()
+    except Exception:
+        return
+
+    async for event in watcher.events():
+        try:
+            if event.device is not None:
+                payload = {
+                    "event": "device",
+                    "action": event.action,
+                    "device": event.device.model_dump(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "monotonic_ns": time.monotonic_ns(),
+                }
+                await hub.broadcast(payload, topic="devices")
+        except Exception:
+            pass
+
+
+def start_device_monitor() -> None:
+    """Start the background device monitor task (idempotent)."""
+    global _monitor_task
+    if _monitor_task is None or _monitor_task.done():
+        try:
+            loop = asyncio.get_event_loop()
+            _monitor_task = loop.create_task(_device_monitor_loop())
+        except RuntimeError:
+            pass
 
 
 class ResolveDeviceRequest(BaseModel):
@@ -74,14 +138,15 @@ def _session_to_dict(session: SandboxSession) -> Dict[str, Any]:
 
 @router.get("/health")
 def get_health() -> Dict[str, Any]:
-    """Pre-flight check for daemon health, udev status, and container/VM runtimes."""
+    """Pre-flight check for daemon health, udev/Windows status, and container/VM runtimes."""
+    import sys
     docker_available = bool(shutil.which("docker") or shutil.which("podman"))
     qemu_available = bool(shutil.which("qemu-system-x86_64") or shutil.which("virsh"))
     return {
         "status": "ok",
         "version": "0.1.0",
         "subsystems": {
-            "udev": pyudev is not None,
+            "udev": pyudev is not None or sys.platform == "win32",
             "docker": docker_available,
             "qemu": qemu_available,
         },
@@ -101,14 +166,25 @@ def list_devices(
     if simulate:
         return get_simulated_devices(simulate, manifest=manifest)
 
-    # Real scan via pyudev if available
+    # Real scan via pyudev if available (Linux)
     if pyudev is not None:
         try:
             return scan_usb_devices(manifest=manifest, include_all=all)
         except Exception:
             pass
 
-    # Fallback simulation for development / Windows environments
+    # Real scan on Windows host
+    import sys
+    if sys.platform == "win32":
+        try:
+            from hades.discovery.windows_scanner import scan_windows_usb_devices
+            devs = scan_windows_usb_devices(manifest=manifest, include_all=all)
+            if devs or all:
+                return devs
+        except Exception:
+            pass
+
+    # Fallback simulation for offline testing
     return get_simulated_devices("esp32-native", manifest=manifest)
 
 

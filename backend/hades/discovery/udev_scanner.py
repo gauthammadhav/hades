@@ -69,6 +69,13 @@ def scan_usb_devices(
         List of resolved DiscoveredDevice instances.
     """
     if context is None and pyudev is None:
+        import sys
+        if sys.platform == "win32":
+            try:
+                from hades.discovery.windows_scanner import scan_windows_usb_devices
+                return scan_windows_usb_devices(manifest=manifest, include_all=include_all)
+            except Exception:
+                pass
         return []
     ctx = context or (pyudev.Context() if pyudev is not None else None)
     if ctx is None:
